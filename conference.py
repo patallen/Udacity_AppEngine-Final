@@ -120,15 +120,24 @@ class ConferenceApi(remote.Service):
 
 
     def _createSession(self, request):
+        """Creates a session in the database"""
         c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         conf = c_key.get()
+
+        # Validate that the person creating the
+        # session is the conference organiser.
         if conf.organizerUserId != getUserId(endpoints.get_current_user()):
             raise endpoints.ForbiddenException(
                 'You must be the organizer to create a session.')
+        
+        # Allocate and ID for the session
+        # and set its parent to the conference
         s_id = Session.allocate_ids(size=1, parent=c_key)[0]
         s_key = ndb.Key(Session, s_id, parent=c_key)
         session = Session()
         session.key = s_key
+
+        # Copy request fields into session object
         for field in request.all_fields():
             data = getattr(request, field.name)
             # only copy fields where we get data
@@ -138,6 +147,7 @@ class ConferenceApi(remote.Service):
                     data = datetime.strptime(data, "%Y-%m-%d").date()
                 # write to Conference object
                 setattr(session, field.name, data)
+
         session.put()
         return self._copySessionToForm(session)
     
@@ -146,8 +156,11 @@ class ConferenceApi(remote.Service):
         """Returns sessions in a given conference with optional type filter"""
         c_key = ndb.Key(urlsafe=websafeConferenceKey)
         sessions = Session.query(ancestor=c_key)
+
+        # If sessiontype provided, filter by it.
         if stype:
             sessions = sessions.filter(Session.typeOfSession == stype)
+
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
@@ -204,18 +217,16 @@ class ConferenceApi(remote.Service):
         if not sesh: 
             raise endpoints.BadRequestException('Session key does not exist.')
         profile.sessionKeysWishlist.append(wssk)
-
         profile.put()
         
         return self._copySessionToForm(sesh)
 
     @endpoints.method(message_types.VoidMessage, SessionForms,
-                      path='wishlist', name='getUserWishlist',
+                      path='wishlist', name='getSessionsFromWishlist',
                       http_method = 'GET')
-    def getUserWishlist(self, unused_request):
+    def getSessionsFromWishlist(self, unused_request):
+        """Returns list of sessions based on user's wishlist"""
         profile = self._getProfileFromUser()
-        for key in profile.sessionKeysWishlist:
-            print key
         sesh_keys = [ndb.Key(urlsafe=wssk) for wssk in profile.sessionKeysWishlist] 
         sessions = ndb.get_multi(sesh_keys)
         return SessionForms(
