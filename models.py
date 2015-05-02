@@ -17,9 +17,11 @@ import endpoints
 from protorpc import messages
 from google.appengine.ext import ndb
 
+
 class ConflictException(endpoints.ServiceException):
     """ConflictException -- exception mapped to HTTP 409 response"""
     http_status = httplib.CONFLICT
+
 
 class Profile(ndb.Model):
     """Profile -- User profile object"""
@@ -27,11 +29,14 @@ class Profile(ndb.Model):
     mainEmail = ndb.StringProperty()
     teeShirtSize = ndb.StringProperty(default='NOT_SPECIFIED')
     conferenceKeysToAttend = ndb.StringProperty(repeated=True)
+    sessionKeysWishlist = ndb.StringProperty(repeated=True)
+
 
 class ProfileMiniForm(messages.Message):
     """ProfileMiniForm -- update Profile form message"""
     displayName = messages.StringField(1)
     teeShirtSize = messages.EnumField('TeeShirtSize', 2)
+
 
 class ProfileForm(messages.Message):
     """ProfileForm -- Profile outbound form message"""
@@ -39,14 +44,17 @@ class ProfileForm(messages.Message):
     mainEmail = messages.StringField(2)
     teeShirtSize = messages.EnumField('TeeShirtSize', 3)
     conferenceKeysToAttend = messages.StringField(4, repeated=True)
+    sessionKeysWishlist = messages.StringField(5, repeated=True)
 
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     data = messages.StringField(1, required=True)
 
+
 class BooleanMessage(messages.Message):
     """BooleanMessage-- outbound Boolean value message"""
     data = messages.BooleanField(1)
+
 
 class Conference(ndb.Model):
     """Conference -- Conference object"""
@@ -60,6 +68,7 @@ class Conference(ndb.Model):
     endDate         = ndb.DateProperty()
     maxAttendees    = ndb.IntegerProperty()
     seatsAvailable  = ndb.IntegerProperty()
+
 
 class ConferenceForm(messages.Message):
     """ConferenceForm -- Conference outbound form message"""
@@ -76,9 +85,11 @@ class ConferenceForm(messages.Message):
     websafeKey      = messages.StringField(11)
     organizerDisplayName = messages.StringField(12)
 
+
 class ConferenceForms(messages.Message):
     """ConferenceForms -- multiple Conference outbound form message"""
     items = messages.MessageField(ConferenceForm, 1, repeated=True)
+
 
 class TeeShirtSize(messages.Enum):
     """TeeShirtSize -- t-shirt size enumeration value"""
@@ -98,11 +109,13 @@ class TeeShirtSize(messages.Enum):
     XXXL_M = 14
     XXXL_W = 15
 
+
 class ConferenceQueryForm(messages.Message):
     """ConferenceQueryForm -- Conference query inbound form message"""
     field = messages.StringField(1)
     operator = messages.StringField(2)
     value = messages.StringField(3)
+
 
 class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
@@ -119,6 +132,7 @@ class Session(ndb.Model):
     date = ndb.DateProperty()
     startTime = ndb.TimeProperty()
 
+
 class SessionForm(messages.Message):
     """SessionForm -- outbound form message"""
     name = messages.StringField(1)
@@ -128,11 +142,13 @@ class SessionForm(messages.Message):
     typeOfSession = messages.StringField(5)
     date = messages.StringField(6)
     startTime = messages.StringField(7)
+    websafeKey = messages.StringField(8)
 
 
 class SessionForms(messages.Message):
     """SessionForms -- multiple Sessions outbound form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
+
 
 class SessionType(messages.Enum):
     """SessionType -- session type enumeration value"""
@@ -141,3 +157,6 @@ class SessionType(messages.Enum):
     LECTURE = 3 
     WORKSHOP = 4 
     FREEFORM = 5 
+
+class SessionKeyForm(messages.Message):
+    websafeSessionKey = messages.StringField(1)

@@ -29,6 +29,7 @@ from models import Session
 from models import SessionForm
 from models import SessionForms 
 from models import SessionType 
+from models import SessionKeyForm
 
 
 from settings import WEB_CLIENT_ID
@@ -145,7 +146,7 @@ class ConferenceApi(remote.Service):
         """Returns sessions in a given conference with optional type filter"""
         c_key = ndb.Key(urlsafe=websafeConferenceKey)
         sessions = Session.query(ancestor=c_key)
-        if stype: 
+        if stype:
             sessions = sessions.filter(Session.typeOfSession == stype)
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
@@ -176,7 +177,7 @@ class ConferenceApi(remote.Service):
         if not request.stype:
             raise endpoints.BadRequestException(
                     'You must supply a stype parameter.')
-        return self._getConferenceSessions(request.websafeConferenceKey, request.stype)
+        return self._getConferenceSessions(request.websafeConferenceKey, stype=request.stype)
 
 
     @endpoints.method(StringMessage, SessionForms,
@@ -189,6 +190,38 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
+
+# - - - Wishlist objects - - - - - - - - - - - - - - - - - +
+    @endpoints.method(SessionKeyForm, SessionForm,
+                      path='wishlist', name='addSessionToWishlist',
+                      http_method='POST')
+    def addSessionToWishlist(self, request):
+        """Add session to user's wishlist - takes sessionkey"""
+        wssk = request.websafeSessionKey
+        sesh = ndb.Key(urlsafe=wssk).get()
+        profile = self._getProfileFromUser()
+
+        if not sesh: 
+            raise endpoints.BadRequestException('Session key does not exist.')
+        profile.sessionKeysWishlist.append(wssk)
+
+        profile.put()
+        
+        return self._copySessionToForm(sesh)
+
+    @endpoints.method(message_types.VoidMessage, SessionForms,
+                      path='wishlist', name='getUserWishlist',
+                      http_method = 'GET')
+    def getUserWishlist(self, unused_request):
+        profile = self._getProfileFromUser()
+        for key in profile.sessionKeysWishlist:
+            print key
+        sesh_keys = [ndb.Key(urlsafe=wssk) for wssk in profile.sessionKeysWishlist] 
+        sessions = ndb.get_multi(sesh_keys)
+        return SessionForms(
+            items=[self._copySessionToForm(sesh) for sesh in sessions]
+        )
+
 # - - - Conference objects - - - - - - - - - - - - - - - - -
 
     def _copyConferenceToForm(self, conf, displayName):
