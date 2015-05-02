@@ -36,6 +36,10 @@ from models import ConferenceForms
 from models import ConferenceQueryForm
 from models import ConferenceQueryForms
 from models import TeeShirtSize
+from models import Session 
+from models import SessionForm
+from models import SessionForms 
+
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -84,6 +88,11 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
+SESH_POST_REQUEST = endpoints.ResourceContainer(
+    SessionForm,
+    websafeConferenceKey = messages.StringField(1),
+)
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -93,6 +102,62 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
 class ConferenceApi(remote.Service):
     """Conference API v0.1"""
 
+# - - - Session Objects- - - - - - - - - - - - - - - - - - -
+
+    def _copySessionToForm(self, sesh):
+        """Copy all relevant fields from Session to SessionForm."""
+        sf = SessionForm()
+        for field in sf.all_fields():
+            if hasattr(sesh, field.name):
+                if field.name == 'date':
+                    setattr(sf, field.name, str(getattr(sesh, field.name)))
+                else:
+                    setattr(sf, field.name, getattr(sesh, field.name))
+            elif field.name == "websafeKey":
+                setattr(sf, field.name, sesh.key.urlsafe())
+        sf.check_initialized()
+        return sf
+
+
+    def _createSession(self, request):
+        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        conf = c_key.get()
+        if conf.organizerUserId != getUserId(endpoints.get_current_user()):
+            raise endpoints.ForbiddenException(
+                'You must be the organizer to create a session.')
+        s_id = Session.allocate_ids(size=1, parent=c_key)[0]
+        s_key = ndb.Key(Session, s_id, parent=c_key)
+        session = Session()
+        session.key = s_key
+        for field in request.all_fields():
+            data = getattr(request, field.name)
+            # only copy fields where we get data
+            if data not in (None, []):
+                # special handling for dates (convert string to Date)
+                if field.name == 'date':
+                    data = datetime.strptime(data, "%Y-%m-%d").date()
+                # write to Conference object
+                setattr(session, field.name, data)
+        session.put()
+        return self._copySessionToForm(session)
+
+
+    @endpoints.method(SESH_POST_REQUEST, SessionForm,
+                      path='session/add/{websafeConferenceKey}',
+                      http_method='POST', name='createSession')
+    def createSession(self, request):
+        """Create a session if user is organizer of the conference"""
+        return self._createSession(request)
+
+    @endpoints.method(StringMessage, SessionForms,
+                      path='speaker', name='getSessionsBySpeaker',
+                      http_method='GET')
+    def getSessionsBySpeaker(self, request):
+        speaker = request.data
+        sessions = Session.query(Session.speaker == speaker)
+        return SessionForms(
+            items=[self._copySessionToForm(sesh) for sesh in sessions]
+        )
 # - - - Conference objects - - - - - - - - - - - - - - - - -
 
     def _copyConferenceToForm(self, conf, displayName):
