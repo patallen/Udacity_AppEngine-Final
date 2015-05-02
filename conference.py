@@ -41,6 +41,7 @@ from models import SessionForm
 from models import SessionForms 
 
 
+
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
 from settings import IOS_CLIENT_ID
@@ -91,6 +92,11 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
 SESH_POST_REQUEST = endpoints.ResourceContainer(
     SessionForm,
     websafeConferenceKey = messages.StringField(1),
+)
+
+SESH_BY_TYPE_REQUEST = endpoints.ResourceContainer(
+    StringMessage,
+    websafeConferenceKey = messages.StringField(1)
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -148,7 +154,17 @@ class ConferenceApi(remote.Service):
     def createSession(self, request):
         """Create a session if user is organizer of the conference"""
         return self._createSession(request)
+    
 
+    @endpoints.method(SESH_BY_TYPE_REQUEST, SessionForms,
+                      path='sessions/{websafeConferenceKey}',
+                      http_method='POST', name='getConferenceSessionsByType')
+    def getConferenceSessionsByType(self, request):
+        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        sessions = Session.query(ancestor=c_key).filter(Session.typeOfSession == request.data)
+        return SessionForms(
+            items=[self._copySessionToForm(sesh) for sesh in sessions]
+        )
 
     @endpoints.method(StringMessage, SessionForms,
                       path='speaker', name='getSessionsBySpeaker',
