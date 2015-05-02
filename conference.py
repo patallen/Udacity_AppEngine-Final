@@ -1,17 +1,6 @@
 #!/usr/bin/env python
 
-"""
-conference.py -- Udacity conference server-side Python App Engine API;
-    uses Google Cloud Endpoints
-
-$Id: conference.py,v 1.25 2014/05/24 23:42:19 wesc Exp wesc $
-
-created by wesc on 2014 apr 21
-
-"""
-
-__author__ = 'wesc+api@google.com (Wesley Chun)'
-
+__author__ = 'prallen90@gmail.com (Patrick Allen)'
 
 from datetime import datetime
 
@@ -39,7 +28,7 @@ from models import TeeShirtSize
 from models import Session 
 from models import SessionForm
 from models import SessionForms 
-
+from models import SessionType 
 
 
 from settings import WEB_CLIENT_ID
@@ -94,9 +83,13 @@ SESH_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey = messages.StringField(1),
 )
 
+SESH_REQUEST = endpoints.ResourceContainer(
+    websafeConferenceKey = messages.StringField(1),
+)
+
 SESH_BY_TYPE_REQUEST = endpoints.ResourceContainer(
-    StringMessage,
-    websafeConferenceKey = messages.StringField(1)
+    websafeConferenceKey = messages.StringField(1),
+    stype= messages.StringField(2),
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -146,7 +139,18 @@ class ConferenceApi(remote.Service):
                 setattr(session, field.name, data)
         session.put()
         return self._copySessionToForm(session)
+    
 
+    def _getConferenceSessions(self, websafeConferenceKey, stype=None):
+        """Returns sessions in a given conference with optional type filter"""
+        c_key = ndb.Key(urlsafe=websafeConferenceKey)
+        sessions = Session.query(ancestor=c_key)
+        if stype: 
+            sessions = sessions.filter(Session.typeOfSession == stype)
+        return SessionForms(
+            items=[self._copySessionToForm(sesh) for sesh in sessions]
+        )
+        
 
     @endpoints.method(SESH_POST_REQUEST, SessionForm,
                       path='session/add/{websafeConferenceKey}',
@@ -156,15 +160,24 @@ class ConferenceApi(remote.Service):
         return self._createSession(request)
     
 
+    @endpoints.method(SESH_REQUEST, SessionForms,
+                      path='sessions/{websafeConferenceKey}',
+                      http_method='POST', name='getConferenceSessions')
+    def getConferenceSessions(self, request):
+        """Returns all sessions for a given conference - takes websafeConferenceKey"""
+        return self._getConferenceSessions(request.websafeConferenceKey)
+
+
     @endpoints.method(SESH_BY_TYPE_REQUEST, SessionForms,
                       path='sessions/{websafeConferenceKey}',
-                      http_method='POST', name='getConferenceSessionsByType')
+                      http_method='GET', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
-        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
-        sessions = Session.query(ancestor=c_key).filter(Session.typeOfSession == request.data)
-        return SessionForms(
-            items=[self._copySessionToForm(sesh) for sesh in sessions]
-        )
+        """Returns sessions of a type for a given conference"""
+        if not request.stype:
+            raise endpoints.BadRequestException(
+                    'You must supply a stype parameter.')
+        return self._getConferenceSessions(request.websafeConferenceKey, request.stype)
+
 
     @endpoints.method(StringMessage, SessionForms,
                       path='speaker', name='getSessionsBySpeaker',
