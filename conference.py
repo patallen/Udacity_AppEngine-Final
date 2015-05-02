@@ -149,10 +149,12 @@ class ConferenceApi(remote.Service):
         """Create a session if user is organizer of the conference"""
         return self._createSession(request)
 
+
     @endpoints.method(StringMessage, SessionForms,
                       path='speaker', name='getSessionsBySpeaker',
                       http_method='GET')
     def getSessionsBySpeaker(self, request):
+        """Given a speaker by name, return all sessions he/she is speaking at"""
         speaker = request.data
         sessions = Session.query(Session.speaker == speaker)
         return SessionForms(
