@@ -109,7 +109,8 @@ class ConferenceApi(remote.Service):
         sf = SessionForm()
         for field in sf.all_fields():
             if hasattr(sesh, field.name):
-                if field.name == 'date':
+                # If field is date or startTime, convert to string.
+                if field.name in('date', 'startTime'):
                     setattr(sf, field.name, str(getattr(sesh, field.name)))
                 else:
                     setattr(sf, field.name, getattr(sesh, field.name))
@@ -145,6 +146,8 @@ class ConferenceApi(remote.Service):
                 # special handling for dates (convert string to Date)
                 if field.name == 'date':
                     data = datetime.strptime(data, "%Y-%m-%d").date()
+                if field.name == 'startTime':
+                    data = datetime.strptime(data, "%H:%M").time()
                 # write to Conference object
                 setattr(session, field.name, data)
 
