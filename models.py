@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 
-"""models.py
-
-Udacity conference server-side Python App Engine data & ProtoRPC models
-
-$Id: models.py,v 1.1 2014/05/24 22:01:10 wesc Exp $
-
-created/forked from conferences.py by wesc on 2014 may 24
-
-"""
-
-__author__ = 'wesc+api@google.com (Wesley Chun)'
-
 import httplib
 import endpoints
 from protorpc import messages
@@ -46,6 +34,7 @@ class ProfileForm(messages.Message):
     conferenceKeysToAttend = messages.StringField(4, repeated=True)
     sessionKeysWishlist = messages.StringField(5, repeated=True)
 
+
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     data = messages.StringField(1, required=True)
@@ -64,7 +53,7 @@ class Conference(ndb.Model):
     topics          = ndb.StringProperty(repeated=True)
     city            = ndb.StringProperty()
     startDate       = ndb.DateProperty()
-    month           = ndb.IntegerProperty() # TODO: do we need for indexing like Java?
+    month           = ndb.IntegerProperty()
     endDate         = ndb.DateProperty()
     maxAttendees    = ndb.IntegerProperty()
     seatsAvailable  = ndb.IntegerProperty()
@@ -157,6 +146,7 @@ class SessionType(messages.Enum):
     LECTURE = 3 
     WORKSHOP = 4 
     FREEFORM = 5 
+
 
 class SessionKeyForm(messages.Message):
     websafeSessionKey = messages.StringField(1)
