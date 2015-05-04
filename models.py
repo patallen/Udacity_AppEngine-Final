@@ -138,6 +138,9 @@ class SessionForms(messages.Message):
     """SessionForms -- multiple Sessions outbound form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
 
+class SessionTypeForm(messages.Message):
+    sessionType = messages.StringField(1, required=True)
+
 
 class SessionType(messages.Enum):
     """SessionType -- session type enumeration value"""

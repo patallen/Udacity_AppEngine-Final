@@ -29,6 +29,7 @@ from models import Session
 from models import SessionForm
 from models import SessionForms 
 from models import SessionType 
+from models import SessionTypeForm
 from models import SessionKeyForm
 
 
@@ -83,7 +84,9 @@ SESH_POST_REQUEST = endpoints.ResourceContainer(
     SessionForm,
     websafeConferenceKey = messages.StringField(1),
 )
-
+TOPIC_REQUEST = endpoints.ResourceContainer(
+    topic = messages.StringField(1)        
+)
 SESH_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey = messages.StringField(1),
 )
@@ -167,7 +170,38 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
+####################################################################
+# - - - - - - - - - - Endpoints for Final Task 3 - - - - - - - - - -
+####################################################################
+    @endpoints.method(SessionTypeForm, SessionForms,
+                      path='sessionstype', name='getSessionByType',
+                      http_method='POST')
+    def getSessionsByType(self, request):
+        """Return all sessions of a specific type from  across all conferences"""
+        stype = request.sessionType
+
+        # Ensure that sessionType provided is valid
+        if stype not in SessionType.to_dict():
+            raise endpoints.BadRequestException('Not a valid Session Type.')
         
+        sessions = Session.query(Session.typeOfSession == stype)
+        return SessionForms(
+            items=[self._copySessionToForm(sesh) for sesh in sessions]
+        )
+
+
+    @endpoints.method(TOPIC_REQUEST, ConferenceForms,
+                      path='conferences/{topic}', name='getConferencesByTopic',
+                      http_method='GET')
+    def getConferencesByTopic(self, request):
+        """Return all conferences with given topic"""
+        topic = request.topic
+
+        conferences  = Conference.query(Conference.topics  == topic)
+        return ConferenceForms(
+            items=[self._copyConferenceToForm(conf, "") for conf in conferences]
+        )  
+
 
     @endpoints.method(SESH_POST_REQUEST, SessionForm,
                       path='session/add/{websafeConferenceKey}',
@@ -206,8 +240,33 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
+## This query was to prove that multiple inequality filters on
+## different properties does not work.
+## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#    @endpoints.method(message_types.VoidMessage, SessionForms,
+#                       path='nonworkshop', name='getNonWorkshop',
+#                       http_method='GET')
+#    def getNonWorkshop(self, request):
+##        sessions = Session.query(ndb.AND(Session.typeOfSession != 'WORKSHOP',
+##                                 Session.startTime < datetime.strptime('19:00', '%H:%M').time()))
+##        return SessionForms(
+##            items=[self._copySessionToForm(sesh) for sesh in sessions] 
+##
+#        sessions = Session.query(
+#                        ndb.AND(
+#			ndb.OR(Session.typeOfSession == 'NOT_SPECIFIED',
+#				Session.typeOfSession == 'KEYNOTE',
+#				Session.typeOfSession == 'FREEFORM',
+#				Session.typeOfSession == 'LECTURE',
+#                                ), Session.startTime < datetime.strptime('19:00', '%H:%M').time())
+#			)
+#	return SessionForms(
+#            items=[self._copySessionToForm(sesh) for sesh in sessions] 
+#        )
+#####################################################################
 
 # - - - Wishlist objects - - - - - - - - - - - - - - - - - +
+
     @endpoints.method(SessionKeyForm, SessionForm,
                       path='wishlist', name='addSessionToWishlist',
                       http_method='POST')
