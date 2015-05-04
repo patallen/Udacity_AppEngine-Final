@@ -43,6 +43,7 @@ from utils import getUserId
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"
+MEMCACHE_FT_SPEAKER_KEY = "FEATURED_SPEAKERS"
 ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
                     'are nearly sold out: %s')
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -156,6 +157,7 @@ class ConferenceApi(remote.Service):
                 setattr(session, field.name, data)
 
         session.put()
+        self._cacheFeaturedSpeaker(request.websafeConferenceKey, session.speaker)
         return self._copySessionToForm(session)
 
     def _getConferenceSessions(self, websafeConferenceKey, stype=None):
@@ -296,6 +298,19 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
 
+    @staticmethod
+    def _cacheFeaturedSpeaker(wsck, speaker):
+        """Create featured speaker and cache in memcache"""
+        sessions = Session.query(ancestor=ndb.Key(urlsafe=wsck)).filter(Session.speaker == speaker).fetch()
+        if len(sessions) >= 2:
+            memcache.add(key=MEMCACHE_FT_SPEAKER_KEY, value='Featured Speaker: %s' % speaker)
+
+    @endpoints.method(message_types.VoidMessage, StringMessage,
+                      path='speaker/featured/get',
+                      http_method='GET', name='getFeaturedSpeaker')
+    def getFeaturedSpeaker(self, request):
+        """Return featured speaker from memcache"""
+        return StringMessage(data=memcache.get(MEMCACHE_FT_SPEAKER_KEY or ""))
 # - - - Conference objects - - - - - - - - - - - - - - - - -
 
     def _copyConferenceToForm(self, conf, displayName):
@@ -642,7 +657,6 @@ class ConferenceApi(remote.Service):
     def getAnnouncement(self, request):
         """Return Announcement from memcache."""
         return StringMessage(data=memcache.get(MEMCACHE_ANNOUNCEMENTS_KEY) or "")
-
 
 # - - - Registration - - - - - - - - - - - - - - - - - - - -
 
