@@ -298,11 +298,12 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
 
-    @staticmethod
-    def _cacheFeaturedSpeaker(wsck, speaker):
+    def _cacheFeaturedSpeaker(self, wsck, speaker):
         """Create featured speaker and cache in memcache"""
-        sessions = Session.query(ancestor=ndb.Key(urlsafe=wsck)).filter(Session.speaker == speaker).fetch()
-        if len(sessions) >= 2:
+        sessions = Session.query(ancestor=ndb.Key(urlsafe=wsck)).filter(Session.speaker == speaker)
+        print "Count: %s " % str(len(sessions.fetch(3)))
+        if sessions.fetch(3):
+            print 'BOOYA'
             memcache.add(key=MEMCACHE_FT_SPEAKER_KEY, value='Featured Speaker: %s' % speaker)
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
