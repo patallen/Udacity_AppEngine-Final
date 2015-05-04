@@ -173,6 +173,7 @@ class ConferenceApi(remote.Service):
 ####################################################################
 # - - - - - - - - - - Endpoints for Final Task 3 - - - - - - - - - -
 ####################################################################
+
     @endpoints.method(SessionTypeForm, SessionForms,
                       path='sessionstype', name='getSessionByType',
                       http_method='POST')
@@ -240,6 +241,9 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
+
+
+#####################################################################
 ## This query was to prove that multiple inequality filters on
 ## different properties does not work.
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
