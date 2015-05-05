@@ -58,18 +58,17 @@ Query Problem:
 
 Possible Fixes:
 - Can query by typeOfSession equal to everything but WORKSHOP ex:
-
-     ```python
-      Session.query(
-				ndb.AND(
-					ndb.OR(Session.typeOfSession == 'NOT_SPECIFIED',
-						Session.typeOfSession == 'KEYNOTE',
-						Session.typeOfSession == 'FREEFORM',
-						Session.typeOfSession == 'LECTURE'
-						), Session.startTime < datetime.strptime('19:00', '%H:%M').time())
-				)
-	```
-
+```python
+Session.query(
+    ndb.AND(
+        ndb.OR(Session.typeOfSession == 'NOT_SPECIFIED',
+        Session.typeOfSession == 'KEYNOTE',
+        Session.typeOfSession == 'FREEFORM',
+        Session.typeOfSession == 'LECTURE'
+        ), Session.startTime < datetime.strptime('19:00', '%H:%M').time()
+    )
+)
+```
 - Could programatically exclude sessions with type of 'WORKSHOP'
 
 [1]: https://console.developers.google.com/
