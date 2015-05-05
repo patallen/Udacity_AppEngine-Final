@@ -86,7 +86,7 @@ app.constant('HTTP_ERRORS', {
  */
 app.factory('oauth2Provider', function ($modal) {
     var oauth2Provider = {
-        CLIENT_ID: '336834571948-fn3rkpbdkd0130de59foq2l6bandjh84.apps.googleusercontent.com',
+        CLIENT_ID: 'your-client-ID',
         SCOPES: 'email profile',
         signedIn: false
     }

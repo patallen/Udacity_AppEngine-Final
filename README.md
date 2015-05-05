@@ -62,7 +62,7 @@ Query Problem:
 Possible Fixes:
 - Can query by typeOfSession equal to everything but WORKSHOP ex:
 
-_This has been implemented in the **getEarlyNonWorkshopSessions** endbpoint._
+_This has been implemented in the **getEarlyNonWorkshopSessions** endpoint._
 ```python
 Session.query(
     ndb.AND(
