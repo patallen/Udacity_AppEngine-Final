@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-
-__author__ = 'prallen90@gmail.com (Patrick Allen)'
-
 from datetime import datetime
 
 import endpoints
@@ -22,7 +19,6 @@ from models import BooleanMessage
 from models import Conference
 from models import ConferenceForm
 from models import ConferenceForms
-from models import ConferenceQueryForm
 from models import ConferenceQueryForms
 from models import TeeShirtSize
 from models import Session
@@ -100,10 +96,15 @@ SESH_BY_TYPE_REQUEST = endpoints.ResourceContainer(
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-@endpoints.api(name='conference', version='v1', audiences=[ANDROID_AUDIENCE],
+@endpoints.api(
+               name='conference',
+               version='v1',
+               audiences=[ANDROID_AUDIENCE],
                allowed_client_ids=[
-                   WEB_CLIENT_ID, API_EXPLORER_CLIENT_ID, ANDROID_CLIENT_ID, IOS_CLIENT_ID],
-               scopes=[EMAIL_SCOPE])
+                   WEB_CLIENT_ID, API_EXPLORER_CLIENT_ID,
+                   ANDROID_CLIENT_ID, IOS_CLIENT_ID],
+               scopes=[EMAIL_SCOPE]
+            )
 class ConferenceApi(remote.Service):
 
     """Conference API v0.1"""
@@ -240,34 +241,7 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
 
-
-#####################################################################
-# This query was to prove that multiple inequality filters on
-# different properties does not work.
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#    @endpoints.method(message_types.VoidMessage, SessionForms,
-#                       path='nonworkshop', name='getNonWorkshop',
-#                       http_method='GET')
-#    def getNonWorkshop(self, request):
-# sessions = Session.query(ndb.AND(Session.typeOfSession != 'WORKSHOP',
-# Session.startTime < datetime.strptime('19:00', '%H:%M').time()))
-# return SessionForms(
-##            items=[self._copySessionToForm(sesh) for sesh in sessions]
-##
-#        sessions = Session.query(
-#                        ndb.AND(
-#			ndb.OR(Session.typeOfSession == 'NOT_SPECIFIED',
-#				Session.typeOfSession == 'KEYNOTE',
-#				Session.typeOfSession == 'FREEFORM',
-#				Session.typeOfSession == 'LECTURE',
-#                                ), Session.startTime < datetime.strptime('19:00', '%H:%M').time())
-#			)
-#	return SessionForms(
-#            items=[self._copySessionToForm(sesh) for sesh in sessions]
-#        )
-#####################################################################
-
-# - - - Wishlist objects - - - - - - - - - - - - - - - - - +
+# - - - Wishlist objects - - - - - - - - - - - - - - - - -
 
     @endpoints.method(SessionKeyForm, SessionForm,
                       path='wishlist', name='addSessionToWishlist',
@@ -300,11 +274,21 @@ class ConferenceApi(remote.Service):
 
     def _cacheFeaturedSpeaker(self, wsck, speaker):
         """Create featured speaker and cache in memcache"""
-        sessions = Session.query(ancestor=ndb.Key(urlsafe=wsck)).filter(Session.speaker == speaker)
-        print "Count: %s " % str(len(sessions.fetch(3)))
-        if sessions.fetch(3):
-            print 'BOOYA'
-            memcache.add(key=MEMCACHE_FT_SPEAKER_KEY, value='Featured Speaker: %s' % speaker)
+        seshlist = Session.query(ancestor=ndb.Key(urlsafe=wsck))\
+                   .filter(Session.speaker == speaker).fetch()
+        seshNames = ""
+        # If two or more sessions with speaker name
+        if len(seshlist) > 1:
+            # Format name list with commas and period at end.
+            for cnt, sesh in enumerate(seshlist):
+                if cnt < len(seshlist) - 1:
+                    seshNames += "{}, ".format(sesh.name)
+                else:
+                    seshNames += "and {}.".format(sesh.name)
+            # Add speaker to memcache
+            ftSpeaker = memcache.add(key=MEMCACHE_FT_SPEAKER_KEY,
+                                     value='%s is speaking at %s' % (speaker, seshNames))
+        return ftSpeaker
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
                       path='speaker/featured/get',
