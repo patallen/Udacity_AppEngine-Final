@@ -244,7 +244,28 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
 
-# - - - Wishlist objects - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - Query Problem Code - - - - - - - - - - - - - -
+
+    @endpoints.method(message_types.VoidMessage, SessionForms,
+                       path='nonworkshop', name='getEarlyNonWorkshopSessions',
+                       http_method='GET')
+    def getEarlyNonWorkshopSessions(self, request):
+        """Queries for all sessions before 7:00PM that are not Workshops"""
+        sessions = Session.query(
+                        ndb.AND(
+           ndb.OR(Session.typeOfSession == 'NOT_SPECIFIED',
+               Session.typeOfSession == 'KEYNOTE',
+               Session.typeOfSession == 'FREEFORM',
+               Session.typeOfSession == 'LECTURE',
+                                ), Session.startTime < datetime.strptime('19:00', '%H:%M').time())
+           )
+        return SessionForms(
+            items=[self._copySessionToForm(sesh) for sesh in sessions]
+        )
+
+####################################################################
+# - - - - - - - - - - Code for Final Task 4 - - - - - - - - - - - -
+####################################################################
 
     @endpoints.method(SessionKeyForm, SessionForm,
                       path='wishlist', name='addSessionToWishlist',
@@ -279,13 +300,14 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
-
+# - - - - - - - Task 4 Code - - - - - - - - - - - - - - - - - - - -
     def _cacheFeaturedSpeaker(self, wsck, speaker):
         """Create featured speaker and cache in memcache"""
         seshlist = Session.query(ancestor=ndb.Key(urlsafe=wsck))\
                    .filter(Session.speaker == speaker).fetch()
         seshNames = ""
         # If two or more sessions with speaker name
+        ftspeaker = None
         if len(seshlist) > 1:
             # Format name list with commas and period at end.
             for cnt, sesh in enumerate(seshlist):
@@ -305,7 +327,7 @@ class ConferenceApi(remote.Service):
         """Return featured speaker from memcache"""
         return StringMessage(data=memcache.get(MEMCACHE_FT_SPEAKER_KEY or ""))
 
-        
+
 # - - - Conference objects - - - - - - - - - - - - - - - - -
 
     def _copyConferenceToForm(self, conf, displayName):
