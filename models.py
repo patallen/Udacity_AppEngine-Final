@@ -124,9 +124,9 @@ class Session(ndb.Model):
 
 class SessionForm(messages.Message):
     """SessionForm -- outbound form message"""
-    name = messages.StringField(1)
+    name = messages.StringField(1, required=True)
     highlights= messages.StringField(2)
-    speaker = messages.StringField(3)
+    speaker = messages.StringField(3, required=True)
     durationInMin = messages.IntegerField(4)
     typeOfSession = messages.StringField(5)
     date = messages.StringField(6)
@@ -138,9 +138,15 @@ class SessionForms(messages.Message):
     """SessionForms -- multiple Sessions outbound form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
 
+
 class SessionTypeForm(messages.Message):
+    """SessionTypeForm -- inbound SessionType field"""
     sessionType = messages.StringField(1, required=True)
 
+
+class SessionKeyForm(messages.Message):
+    """SessionTypeForm -- inbound SessionKey field"""
+    websafeSessionKey = messages.StringField(1, required=True)
 
 class SessionType(messages.Enum):
     """SessionType -- session type enumeration value"""
@@ -149,7 +155,3 @@ class SessionType(messages.Enum):
     LECTURE = 3 
     WORKSHOP = 4 
     FREEFORM = 5 
-
-
-class SessionKeyForm(messages.Message):
-    websafeSessionKey = messages.StringField(1)

@@ -66,36 +66,36 @@ FIELDS = {
             'MONTH': 'month',
             'MAX_ATTENDEES': 'maxAttendees',
 }
-
+# Used in getConference and registerForConference endpoints
 CONF_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     websafeConferenceKey=messages.StringField(1),
 )
-
+# Used in updateConference enpoint
 CONF_POST_REQUEST = endpoints.ResourceContainer(
     ConferenceForm,
     websafeConferenceKey=messages.StringField(1),
 )
-
+# Used in createSession endpoint
 SESH_POST_REQUEST = endpoints.ResourceContainer(
     SessionForm,
     websafeConferenceKey=messages.StringField(1),
 )
+# Used in getConferencesByTopic endpoint
 TOPIC_REQUEST = endpoints.ResourceContainer(
     topic=messages.StringField(1)
 )
+# Used in getConferenceSessions enpoint
 SESH_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
-
+# Used in getConferenceSessionsByType endpoint
 SESH_BY_TYPE_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
     stype=messages.StringField(2),
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
 @endpoints.api(
                name='conference',
                version='v1',
@@ -106,9 +106,11 @@ SESH_BY_TYPE_REQUEST = endpoints.ResourceContainer(
                scopes=[EMAIL_SCOPE]
             )
 class ConferenceApi(remote.Service):
-
     """Conference API v0.1"""
 
+####################################################################
+# - - - - - - - - - - Final Project Starts Here - - - - - - - - - -
+####################################################################
 # - - - Session Objects- - - - - - - - - - - - - - - - - - -
 
     def _copySessionToForm(self, sesh):
@@ -158,6 +160,7 @@ class ConferenceApi(remote.Service):
                 setattr(session, field.name, data)
 
         session.put()
+        # If speaker is speaking more than once at this conf, cache in memcache
         self._cacheFeaturedSpeaker(request.websafeConferenceKey, session.speaker)
         return self._copySessionToForm(session)
 
@@ -252,8 +255,13 @@ class ConferenceApi(remote.Service):
         sesh = ndb.Key(urlsafe=wssk).get()
         profile = self._getProfileFromUser()
 
+        # Raise exception if session does not exist
         if not sesh:
             raise endpoints.BadRequestException('Session key does not exist.')
+        # Raise exception if session already in user's wishlist
+        if wssk in profile.sessionKeysWishlist:
+            raise endpoints.BadRequestException('Session key already in wishlist')
+
         profile.sessionKeysWishlist.append(wssk)
         profile.put()
 
@@ -296,6 +304,8 @@ class ConferenceApi(remote.Service):
     def getFeaturedSpeaker(self, request):
         """Return featured speaker from memcache"""
         return StringMessage(data=memcache.get(MEMCACHE_FT_SPEAKER_KEY or ""))
+
+        
 # - - - Conference objects - - - - - - - - - - - - - - - - -
 
     def _copyConferenceToForm(self, conf, displayName):
