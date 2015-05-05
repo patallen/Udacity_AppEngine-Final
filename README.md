@@ -14,44 +14,52 @@ This is the fourth final project for the Udacity Full Stack NanoDegree.
 1. Run the app with the devserver using `dev_appserver.py DIR`, and ensure it's running by visiting your local server's address (by default [localhost:8080][2].)
 1. Deploy your application.
 
-## Products
+#### Products
 - [App Engine][3]
-## Language
+
+#### Language
 - [Python][4]
-## APIs
+
+#### APIs
 - [Google Cloud Endpoints][5]
 
-###TASK 2:
-Added Session model
-Session is a child of conference - all sessions in a conferenced can be easily queried with ancestor query.
+### Implementation Explanation:
+- Added Session model
+	- Session is a child of conference - all sessions in a conferenced can be easily queried with ancestor query.
 
-Added SessionForm as well as SessionForms for returning multiple sessions.
+- Added SessionForm as well as SessionForms for returning multiple sessions.
 
-Choices for Session model:
-Name is required
-Speaker is required (must have a speaker for each session and will be queried on later)
+**Choices for Session model:**
+
+1. ***name*** is required
+1. ***speaker*** is required (must have a speaker for each session and will be queried on later)
 	- Could have used a full fledged entity (new model/forms) for speakers, 
 	- Left speaker as string for proof of concept.
-Duration - duration of the session. Opted to go for time in minutes (this will be query-able later on)
-typeOfSession - I wasn't exactly sure how to implement this... I went with an enum class, much like the TeeShirtSize in profile.
+1. ***duration*** - duration of the session. Opted to go for time in minutes (this will be query-able later on)
+1. ***typeOfSession*** - I wasn't exactly sure how to implement this... I went with an enum class, much like the TeeShirtSize in profile.
 	- Can only specify certain types
-	- Can call the class as a list? to check if values valid
-Date - Stored in the DB as a date object, presented as string
-Time - Stored in the DB as time object, presented as string (will be queried on later)
+	- Can call the class as a list with to_to check if values valid
+1. ***date*** - Stored in the DB as a date object, presented as string
+1. ***startTime*** - Stored in the DB as time object, presented as string (will be queried on later)
+1. ***websafeKey*** - not stored in db, but computed with `urlsafe` in SessionForm.
 
-websafekey - not stored in db, but computed in SessionForm.
-
-###TASK 3:
+### TASK 3 Questions:
 Additional queries:
-	- getSessionsByType - query all sessions accross all conferences by type
-	sessions = Session.query(Session.typeOfSession == 'WORKSHOP')
-	- getConferencesByCategory - query for all conferences with a specific category
-	sessions = Session.query(Session.category = 'Programming Languages')
+- getSessionsByType - query all sessions accross all conferences by type
+	
+    `sessions = Session.query(Session.typeOfSession == 'WORKSHOP')`
+- getConferencesByCategory - query for all conferences with a specific category
+	
+    `sessions = Session.query(Session.category == 'Programming Languages')`
 
-PROBLEM WITH QUERY:
-	- Only one inequality filter is supported with google datastore.
-		- Can query by typeOfSession equal to everything but WORKSHOP ex:
-			Session.query(
+Query Problem:
+
+- Only one inequality filter is supported with google datastore.
+
+Possible Fixes:
+- Can query by typeOfSession equal to everything but WORKSHOP ex:
+
+      Session.query(
 				ndb.AND(
 					ndb.OR(Session.typeOfSession == 'NOT_SPECIFIED',
 						Session.typeOfSession == 'KEYNOTE',
@@ -60,11 +68,10 @@ PROBLEM WITH QUERY:
 						), Session.startTime < datetime.strptime('19:00', '%H:%M').time())
 				)
 
-		- Could programatically exclude sessions with type of 'WORKSHOP'
+- Could programatically exclude sessions with type of 'WORKSHOP'
 
 [1]: https://console.developers.google.com/
 [2]: https://localhost:8080/
 [3]: https://developers.google.com/appengine
 [4]: http://python.org
 [5]: https://developers.google.com/appengine/docs/python/endpoints/
-
