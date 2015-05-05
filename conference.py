@@ -133,6 +133,9 @@ class ConferenceApi(remote.Service):
         c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         conf = c_key.get()
 
+        # User must be logged in
+        if endpoints.get_current_user() is None:
+            raise endpoints.UnauthorizedException('Must be logged in to create a session.')
         # Validate that the person creating the
         # session is the conference organiser.
         if conf.organizerUserId != getUserId(endpoints.get_current_user()):
@@ -307,7 +310,7 @@ class ConferenceApi(remote.Service):
                    .filter(Session.speaker == speaker).fetch()
         seshNames = ""
         # If two or more sessions with speaker name
-        ftspeaker = None
+        ftSpeaker = None
         if len(seshlist) > 1:
             # Format name list with commas and period at end.
             for cnt, sesh in enumerate(seshlist):
