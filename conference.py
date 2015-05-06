@@ -141,6 +141,8 @@ class ConferenceApi(remote.Service):
         if conf.organizerUserId != getUserId(endpoints.get_current_user()):
             raise endpoints.ForbiddenException(
                 'You must be the organizer to create a session.')
+        if request.typeOfSession not in SessionType.to_dict():
+            raise endpoints.BadRequestException('Not a valid Session Type.')
 
         # Allocate and ID for the session
         # and set its parent to the conference
