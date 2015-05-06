@@ -279,6 +279,9 @@ class ConferenceApi(remote.Service):
         sesh = ndb.Key(urlsafe=wssk).get()
         profile = self._getProfileFromUser()
 
+        # Raise exception if wssk is not a session key
+        if ndb.Key(urlsafe=wssk).kind() != 'Session':
+            raise endpoints.BadRequestException('websafeKey provided is not a session key.')
         # Raise exception if session does not exist
         if not sesh:
             raise endpoints.BadRequestException('Session key does not exist.')
