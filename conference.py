@@ -272,7 +272,7 @@ class ConferenceApi(remote.Service):
 ####################################################################
 # - - - - - - - - - - Code for Final Task 4 - - - - - - - - - - - -
 ####################################################################
-
+    @ndb.transactional
     @endpoints.method(SessionKeyForm, SessionForm,
                       path='wishlist', name='addSessionToWishlist',
                       http_method='POST')
