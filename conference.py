@@ -187,7 +187,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(SessionTypeForm, SessionForms,
                       path='sessionstype', name='getSessionByType',
-                      http_method='POST')
+                      http_method='GET')
     def getSessionsByType(self, request):
         """Return all sessions of a specific type from  across all conferences"""
         stype = request.sessionType
@@ -215,21 +215,21 @@ class ConferenceApi(remote.Service):
         )
 
     @endpoints.method(SESH_POST_REQUEST, SessionForm,
-                      path='session/add/{websafeConferenceKey}',
+                      path='conference/{websafeConferenceKey}/sessions',
                       http_method='POST', name='createSession')
     def createSession(self, request):
         """Create a session if user is organizer of the conference"""
         return self._createSession(request)
 
     @endpoints.method(SESH_REQUEST, SessionForms,
-                      path='sessions/{websafeConferenceKey}',
-                      http_method='POST', name='getConferenceSessions')
+                      path='conference/{websafeConferenceKey}/sessions',
+                      http_method='GET', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         """Returns all sessions for a given conference - takes websafeConferenceKey"""
         return self._getConferenceSessions(request.websafeConferenceKey)
 
     @endpoints.method(SESH_BY_TYPE_REQUEST, SessionForms,
-                      path='sessions/{websafeConferenceKey}',
+                      path='confsessionsbytype/{websafeConferenceKey}',
                       http_method='GET', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         """Returns sessions of a type for a given conference"""
