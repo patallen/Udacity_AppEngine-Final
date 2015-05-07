@@ -142,8 +142,10 @@ class ConferenceApi(remote.Service):
         if conf.organizerUserId != getUserId(endpoints.get_current_user()):
             raise endpoints.ForbiddenException(
                 'You must be the organizer to create a session.')
-        if request.typeOfSession not in SessionType.to_dict():
-            raise endpoints.BadRequestException('Not a valid Session Type.')
+        # If sessionType was supplied, make sure it is valid
+        if request.typeOfSession:
+            if request.typeOfSession not in SessionType.to_dict():
+                raise endpoints.BadRequestException('Not a valid Session Type.')
 
         # Allocate and ID for the session
         # and set its parent to the conference
@@ -310,6 +312,11 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(sesh) for sesh in sessions]
         )
 # - - - - - - - Task 4 Code - - - - - - - - - - - - - - - - - - - -
+    @staticmethod
+    def _cacheFtSpeakerStr(str):
+        memcache.add(key=MEMCACHE_FT_SPEAKER_KEY, value=str)
+        return str
+
     def _cacheFeaturedSpeaker(self, wsck, speaker):
         """Create featured speaker and cache in memcache"""
         seshlist = Session.query(ancestor=ndb.Key(urlsafe=wsck))\
@@ -317,6 +324,7 @@ class ConferenceApi(remote.Service):
         seshNames = ""
         # If two or more sessions with speaker name
         ftSpeaker = None
+        ftSpeakerStr = ''
         if len(seshlist) > 1:
             # Format name list with commas and period at end.
             for cnt, sesh in enumerate(seshlist):
@@ -324,10 +332,14 @@ class ConferenceApi(remote.Service):
                     seshNames += "{}, ".format(sesh.name)
                 else:
                     seshNames += "and {}.".format(sesh.name)
+            ftSpeakerStr = '%s is speaking at %s' % (speaker, seshNames)
             # Add speaker to memcache
-            ftSpeaker = memcache.add(key=MEMCACHE_FT_SPEAKER_KEY,
-                                     value='%s is speaking at %s' % (speaker, seshNames))
-        return ftSpeaker
+            taskqueue.add(params={'ftSpeakerStr': ftSpeakerStr,
+                                  'whatsthis': 'What is this?'},
+                      url='/tasks/set_ft_speaker'
+                      )
+        
+        return ftSpeakerStr
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
                       path='speaker/featured/get',

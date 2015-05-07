@@ -1,4 +1,4 @@
-application: your-application-id
+application: udacity-ae
 version: 1
 runtime: python27
 api_version: 1
@@ -32,6 +32,10 @@ handlers:       # static then dynamic
 
 - url: /tasks/send_confirmation_email
   script: main.app
+
+- url: /tasks/set_ft_speaker
+  script: main.app
+
 
 - url: /crons/set_announcement
   script: main.app
