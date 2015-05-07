@@ -168,8 +168,10 @@ class ConferenceApi(remote.Service):
                 setattr(session, field.name, data)
 
         session.put()
-        # If speaker is speaking more than once at this conf, cache in memcache
-        self._cacheFeaturedSpeaker(request.websafeConferenceKey, session.speaker)
+        taskqueue.add(params={'wsck': c_key.urlsafe(),
+                              'speaker': session.speaker},
+                      url='/tasks/set_ft_speaker'
+                      )
         return self._copySessionToForm(session)
 
     def _getConferenceSessions(self, websafeConferenceKey, stype=None):
@@ -313,12 +315,11 @@ class ConferenceApi(remote.Service):
         )
 # - - - - - - - Task 4 Code - - - - - - - - - - - - - - - - - - - -
     @staticmethod
-    def _cacheFtSpeakerStr(str):
-        memcache.add(key=MEMCACHE_FT_SPEAKER_KEY, value=str)
-        return str
-
-    def _cacheFeaturedSpeaker(self, wsck, speaker):
-        """Create featured speaker and cache in memcache"""
+    def _cacheFeaturedSpeaker(wsck, speaker):
+        """
+        Checks if speaker is speaking at multiple sessions in given 
+        conference and caches him/her has featured speaker if true.
+        """
         seshlist = Session.query(ancestor=ndb.Key(urlsafe=wsck))\
                    .filter(Session.speaker == speaker).fetch()
         seshNames = ""
@@ -334,11 +335,7 @@ class ConferenceApi(remote.Service):
                     seshNames += "and {}.".format(sesh.name)
             ftSpeakerStr = '%s is speaking at %s' % (speaker, seshNames)
             # Add speaker to memcache
-            taskqueue.add(params={'ftSpeakerStr': ftSpeakerStr,
-                                  'whatsthis': 'What is this?'},
-                      url='/tasks/set_ft_speaker'
-                      )
-        
+            memcache.add(key=MEMCACHE_FT_SPEAKER_KEY, value=ftSpeakerStr)
         return ftSpeakerStr
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
