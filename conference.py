@@ -27,6 +27,7 @@ from models import SessionForms
 from models import SessionType
 from models import SessionTypeForm
 from models import SessionKeyForm
+from models import SpeakerMessage
 
 
 from settings import WEB_CLIENT_ID
@@ -238,12 +239,12 @@ class ConferenceApi(remote.Service):
                 'You must supply a stype parameter.')
         return self._getConferenceSessions(request.websafeConferenceKey, stype=request.stype)
 
-    @endpoints.method(StringMessage, SessionForms,
+    @endpoints.method(SpeakerMessage, SessionForms,
                       path='speaker', name='getSessionsBySpeaker',
                       http_method='GET')
     def getSessionsBySpeaker(self, request):
         """Given a speaker by name, return all sessions he/she is speaking at"""
-        speaker = request.data
+        speaker = request.speaker
         sessions = Session.query(Session.speaker == speaker)
         return SessionForms(
             items=[self._copySessionToForm(sesh) for sesh in sessions]

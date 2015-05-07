@@ -155,3 +155,7 @@ class SessionType(messages.Enum):
     LECTURE = 3 
     WORKSHOP = 4 
     FREEFORM = 5 
+
+class SpeakerMessage(messages.Message):
+    """SpeakerMessage --inbound Speaker Name field"""
+    speaker = messages.StringField(1, required=True)
